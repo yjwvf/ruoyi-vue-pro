@@ -10,6 +10,7 @@ import cn.iocoder.yudao.module.crm.enums.common.CrmSceneTypeEnum;
 import cn.iocoder.yudao.module.crm.util.CrmPermissionUtils;
 import org.apache.ibatis.annotations.Mapper;
 
+import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,7 +38,8 @@ public interface CrmClueMapper extends BaseMapperX<CrmClueDO> {
                 .eqIfPresent(CrmClueDO::getSource, pageReqVO.getSource())
                 .eqIfPresent(CrmClueDO::getFollowUpStatus, pageReqVO.getFollowUpStatus())
                 .orderByDesc(CrmClueDO::getId);
-        return selectJoinPage(pageReqVO, CrmClueDO.class, query);
+        PageResult<CrmClueDO> crmClueDOPageResult =  selectJoinPage(pageReqVO, CrmClueDO.class, query);
+        return crmClueDOPageResult;
     }
 
     default List<CrmClueDO> selectBatchIds(Collection<Long> ids, Long userId) {

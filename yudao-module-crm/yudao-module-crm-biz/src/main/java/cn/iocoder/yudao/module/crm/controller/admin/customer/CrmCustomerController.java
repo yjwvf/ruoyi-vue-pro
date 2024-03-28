@@ -288,8 +288,8 @@ public class CrmCustomerController {
 
     @PostMapping("/import")
     @Operation(summary = "导入客户")
-    @PreAuthorize("@ss.hasPermission('system:customer:import')")
-    public CommonResult<CrmCustomerImportRespVO> importExcel(@Valid @RequestBody CrmCustomerImportReqVO importReqVO)
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportRespVO> importExcel(@Valid CrmCustomerImportReqVO importReqVO)
             throws Exception {
         List<CrmCustomerImportExcelVO> list = ExcelUtils.read(importReqVO.getFile(), CrmCustomerImportExcelVO.class);
         return success(customerService.importCustomerList(list, importReqVO));
@@ -300,6 +300,14 @@ public class CrmCustomerController {
     @PreAuthorize("@ss.hasPermission('crm:customer:update')")
     public CommonResult<Boolean> transferCustomer(@Valid @RequestBody CrmCustomerTransferReqVO reqVO) {
         customerService.transferCustomer(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @PutMapping("/transferlist")
+    @Operation(summary = "转移客户")
+    @PreAuthorize("@ss.hasPermission('crm:customer:update')")
+    public CommonResult<Boolean> transferCustomerBatch(@Valid @RequestBody CrmCustomerTransferListReqVO  reqVO) {
+        customerService.transferCustomerBatch(reqVO, getLoginUserId());
         return success(true);
     }
 

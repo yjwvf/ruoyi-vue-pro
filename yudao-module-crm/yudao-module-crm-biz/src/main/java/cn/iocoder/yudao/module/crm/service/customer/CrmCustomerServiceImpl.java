@@ -10,6 +10,7 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.crm.controller.admin.customer.vo.customer.*;
+import cn.iocoder.yudao.module.crm.dal.dataobject.clue.CrmClueDO;
 import cn.iocoder.yudao.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import cn.iocoder.yudao.module.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
 import cn.iocoder.yudao.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
@@ -42,6 +43,7 @@ import java.util.*;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.filterList;
+import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 import static cn.iocoder.yudao.module.crm.enums.ErrorCodeConstants.*;
 import static cn.iocoder.yudao.module.crm.enums.LogRecordConstants.*;
 import static cn.iocoder.yudao.module.crm.enums.customer.CrmCustomerLimitConfigTypeEnum.CUSTOMER_LOCK_LIMIT;
@@ -111,7 +113,7 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
      * @return 客户信息 DO
      */
     private static CrmCustomerDO initCustomer(Object customer, Long ownerUserId) {
-        return BeanUtils.toBean(customer, CrmCustomerDO.class).setOwnerUserId(ownerUserId)
+        return BeanUtils.toBean(customer, CrmCustomerDO.class).setOwnerUserId(ownerUserId==null?getLoginUserId():ownerUserId)
                 .setOwnerTime(LocalDateTime.now());
     }
 
@@ -214,6 +216,37 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_TRANSFER_SUB_BATCH_TYPE, bizNo = "0",
+            success = CRM_CUSTOMER_TRANSFER_BATCH_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#reqVO.ids", level = CrmPermissionLevelEnum.OWNER)
+    public void transferCustomerBatch(CrmCustomerTransferListReqVO reqVO, Long userId) {
+        // 1. 校验线索是否存在
+        List<CrmCustomerDO> customers = validateCustomerExists(reqVO.getIds());
+        // 1.2 校验拥有客户是否到达上限
+        validateCustomerExceedOwnerLimit(reqVO.getNewOwnerUserId(), customers.size());
+
+        //2.1 数据权限转移
+        List<CrmPermissionTransferReqBO> transferReqBOList = new ArrayList<>();
+        customers.forEach(customer -> {
+            transferReqBOList.add(new CrmPermissionTransferReqBO(userId, CrmBizTypeEnum.CRM_CUSTOMER.getType(),
+                    customer.getId(), reqVO.getNewOwnerUserId(), reqVO.getOldOwnerPermissionLevel()));
+        });
+        permissionService.transforPermissionBatch(transferReqBOList);
+
+
+        // 2.2 设置新的负责人
+        customers.forEach(customer -> {
+            customer.setOwnerUserId(reqVO.getNewOwnerUserId());
+            customer.setOwnerTime(LocalDateTime.now());
+        });
+        customerMapper.updateBatch(customers);
+
+        // 3. 记录转移日志
+        LogRecordContext.putVariable("customer", customers);
+    }
+
+    @Override
     @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_LOCK_SUB_TYPE, bizNo = "{{#lockReqVO.id}}",
             success = CRM_CUSTOMER_LOCK_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#lockReqVO.id", level = CrmPermissionLevelEnum.OWNER)
@@ -283,10 +316,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                 customerMapper.insert(customer);
                 respVO.getCreateCustomerNames().add(importCustomer.getName());
                 // 1.2 创建数据权限
-                if (importReqVO.getOwnerUserId() != null) {
-                    permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
-                            .setBizId(customer.getId()).setUserId(importReqVO.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
-                }
+                permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
+                        .setBizId(customer.getId()).setUserId(importReqVO.getOwnerUserId() == null?getLoginUserId():importReqVO.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
                 // 1.3 记录操作日志
                 getSelf().importCustomerLog(customer, false);
                 return;
@@ -555,6 +586,14 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             throw exception(CUSTOMER_NOT_EXISTS);
         }
         return customerDO;
+    }
+
+    private List<CrmCustomerDO> validateCustomerExists(List<Long> ids) {
+        List<CrmCustomerDO> customerList = customerMapper.selectBatchIds(ids);
+        if (CollUtil.isEmpty(customerList) || customerList.size() != ids.size()) {
+            throw exception(CUSTOMER_NOT_EXISTS);
+        }
+        return customerList;
     }
 
     private void validateCustomerIsLocked(CrmCustomerDO customer, Boolean pool) {

@@ -18,11 +18,18 @@ public interface LogRecordConstants {
     String CRM_CLUE_DELETE_SUB_TYPE = "删除线索";
     String CRM_CLUE_DELETE_SUCCESS = "删除了线索【{{#clueName}}】";
     String CRM_CLUE_TRANSFER_SUB_TYPE = "转移线索";
+    String CRM_CLUE_TRANSFER_SUB_BATCH_TYPE = "批量转移线索";
     String CRM_CLUE_TRANSFER_SUCCESS = "将线索【{{#clue.name}}】的负责人从【{getAdminUserById{#clue.ownerUserId}}】变更为了【{getAdminUserById{#reqVO.newOwnerUserId}}】";
+    String CRM_CLUE_TRANSFER_BATCH_SUCCESS = "将线索【{{#reqVO.ids.toString()}}】的负责人从【{getAdminUserById{#userId}}】变更为了【{getAdminUserById{#reqVO.getNewOwnerUserId()}}】";
     String CRM_CLUE_TRANSLATE_SUB_TYPE = "线索转化为客户";
     String CRM_CLUE_TRANSLATE_SUCCESS = "将线索【{{#clueName}}】转化为客户";
     String CRM_CLUE_FOLLOW_UP_SUB_TYPE = "线索跟进";
     String CRM_CLUE_FOLLOW_UP_SUCCESS = "线索跟进【{{#clueName}}】";
+
+    // ======================= CRM_CLUE_CONFIG 线索规则 =======================
+    String CRM_CLUE_CONFIG_TYPE = "CRM 线索规则";
+    String CRM_CLUE_CONFIG_SUB_TYPE = "{{#isClueConfigUpdate? '更新线索规则' : '创建线索规则'}}";
+    String CRM_CLUE_CONFIG_SUCCESS = "{{#isClueConfigUpdate? '成功更新线索规则' : '成功创建线索规则'}}";
 
     // ======================= CRM_CUSTOMER 客户 =======================
 
@@ -34,7 +41,9 @@ public interface LogRecordConstants {
     String CRM_CUSTOMER_DELETE_SUB_TYPE = "删除客户";
     String CRM_CUSTOMER_DELETE_SUCCESS = "删除了客户【{{#customerName}}】";
     String CRM_CUSTOMER_TRANSFER_SUB_TYPE = "转移客户";
+    String CRM_CUSTOMER_TRANSFER_SUB_BATCH_TYPE = "批量转移客户";
     String CRM_CUSTOMER_TRANSFER_SUCCESS = "将客户【{{#customer.name}}】的负责人从【{getAdminUserById{#customer.ownerUserId}}】变更为了【{getAdminUserById{#reqVO.newOwnerUserId}}】";
+    String CRM_CUSTOMER_TRANSFER_BATCH_SUCCESS = "将客户【{{#reqVO.ids.toString()}}】的负责人从【{getAdminUserById{#userId}}】变更为了【{getAdminUserById{#reqVO.getNewOwnerUserId()}}】";
     String CRM_CUSTOMER_LOCK_SUB_TYPE = "{{#customer.lockStatus ? '解锁客户' : '锁定客户'}}";
     String CRM_CUSTOMER_LOCK_SUCCESS = "{{#customer.lockStatus ? '将客户【' + #customer.name + '】解锁' : '将客户【' + #customer.name + '】锁定'}}";
     String CRM_CUSTOMER_POOL_SUB_TYPE = "客户放入公海";
