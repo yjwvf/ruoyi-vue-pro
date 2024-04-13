@@ -2341,6 +2341,8 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (2737, '客户画像', '', 2, 4, 2560, 'portrait', 'ep:picture', 'crm/statistics/portrait/index', 'CrmStatisticsPortrait', 0, b'1', b'1', b'1', '1', '2024-04-05 13:57:40', '1', '2024-04-05 13:57:40', b'0');
 COMMIT;
 
+ALTER TABLE `system_menu`
+    ADD COLUMN `query` VARCHAR(200) COMMENT '路由参数' NOT NULL DEFAULT '' AFTER `path`;
 -- ----------------------------
 -- Table structure for system_notice
 -- ----------------------------
